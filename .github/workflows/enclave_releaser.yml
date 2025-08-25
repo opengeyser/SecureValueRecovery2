@@ -34,6 +34,7 @@ jobs:
       - name: Build Docker base image  
         run: |
           docker buildx build $(DOCKER_BUILD_ARGS) --load -f docker/Dockerfile -t svr2_buildenv --target=builder .
+          
       - name: Build enclave releaser
         run: make docker_enclave_releaser
 
