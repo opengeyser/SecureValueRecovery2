@@ -1,0 +1,65 @@
+name: Enclave release
+
+permissions:
+  contents: write
+  pull-requests: write
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+    - SecureValueRecovery2Mirror
+
+env:
+  DOCKER_BUILD_ARGS: --cache-from type=gha --cache-to type=gha
+  DOCKER_BUILDKIT: 1
+  BUILDX_CONTAINER: container
+  V: 1
+  MAKE_ARGS: GOFLAGS=-buildvcs=false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main project
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          submodules: recursive
+          lfs: true
+
+      - name: Expose Docker environmental variables for gha cache
+        uses: crazy-max/ghaction-github-runtime@3cb05d89e1f492524af3d41a1c98c83bc3025124 # v3.1.0
+
+      - name: Setup Docker
+        run: docker buildx create --use --name container --driver docker-container
+
+      - name: Build Docker base image  
+        run: |
+          docker buildx build $(DOCKER_BUILD_ARGS) --load -f docker/Dockerfile -t svr2_buildenv --target=builder .
+      - name: Build enclave releaser
+        run: make docker_enclave_releaser
+
+      - name: Get new enclave artifacts
+        id: artifacts
+        run: |
+          NEW_FILES=$(git ls-files --others --exclude-standard enclave/releases/)
+          if [ -z "$NEW_FILES" ]; then
+            echo "has_artifacts=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_artifacts=true" >> "$GITHUB_OUTPUT"
+            echo 'artifacts<<EOF' >> "$GITHUB_OUTPUT"
+            echo "$NEW_FILES" >> "$GITHUB_OUTPUT"
+            echo 'EOF' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create pull request
+        if: steps.artifacts.outputs.has_artifacts == 'true'
+        uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e # v7.0.8
+        with:
+          commit-message: "chore: release enclave artifacts"
+          title: "Release enclave artifacts"
+          body: "Automated release of enclave artifacts."
+          base: ${{ github.ref_name }}
+          branch: "enclave-release/${{ github.ref_name }}"
+          add-paths: ${{ steps.artifacts.outputs.artifacts }}
