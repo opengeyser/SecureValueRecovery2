@@ -16,7 +16,7 @@ include .testdepends
 
 build: build/enclave.bin build/enclave.nsm build/enclave.gcpsnp build/attest.gcpsnp build/enclave.azuresnp build/attest.azuresnp
 
-sign: build/enclave.test build/enclave.Standard_DC2s_v3 build/enclave.Standard_DC8s_v3 build/enclave.Standard_DC24s_v3
+sign: build/enclave.test build/enclave.Standard_DC1s_v3 build/enclave.Standard_DC2s_v3 build/enclave.Standard_DC8s_v3 build/enclave.Standard_DC24s_v3
 
 PROTO_FILES= \
   $(patsubst ../shared/proto/%.proto,build/proto/%.pb.cc,$(wildcard ../shared/proto/*.proto)) \
@@ -200,6 +200,10 @@ SGX_LIBRARIES = \
 build/enclave.bin: $(patsubst %,build/%/SGX.a,$(SGX_LIBRARIES))
 	$(QUIET) echo -e "BUILD\t$@"
 	$(QUIET) $(CXX) -o $@ $(SGX_LDFLAGS) -Wl,--start-group $^ -Wl,--end-group $(SGX_LDFLAGS)
+
+build/enclave.Standard_DC1s_v3: build/enclave.bin build/public.pem build/private.pem svr2_Standard_DC1s_v3.conf
+	$(QUIET) echo -e "SIGN\t$@"
+	$(QUIET) $(OE_DIR)/bin/oesign sign -e $< -c svr2_Standard_DC1s_v3.conf -k build/private.pem -o $@ $(QUIET_OUT)
 
 build/enclave.Standard_DC2s_v3: build/enclave.bin build/public.pem build/private.pem svr2_Standard_DC2s_v3.conf
 	$(QUIET) echo -e "SIGN\t$@"

@@ -52,6 +52,7 @@ dockerbase: | git
 	    docker buildx build $(DOCKER_BUILD_ARGS) --load -f docker/Dockerfile -t svr2_buildenv --target=builder .
 
 enclave_releaser: enclave host  # depends on 'host' so its tests will run
+	cp -vn enclave/build/enclave.Standard_DC1s_v3  "enclave/releases/sgx/Standard_DC1s_v3.$$(/opt/openenclave/bin/oesign  dump -e enclave/build/enclave.Standard_DC1s_v3  | fgrep -i mrenclave | cut -d '=' -f2)"
 	cp -vn enclave/build/enclave.Standard_DC2s_v3  "enclave/releases/sgx/Standard_DC2s_v3.$$(/opt/openenclave/bin/oesign  dump -e enclave/build/enclave.Standard_DC2s_v3  | fgrep -i mrenclave | cut -d '=' -f2)"
 	cp -vn enclave/build/enclave.Standard_DC8s_v3  "enclave/releases/sgx/Standard_DC8s_v3.$$(/opt/openenclave/bin/oesign  dump -e enclave/build/enclave.Standard_DC8s_v3  | fgrep -i mrenclave | cut -d '=' -f2)"
 	cp -vn enclave/build/enclave.Standard_DC24s_v3 "enclave/releases/sgx/Standard_DC24s_v3.$$(/opt/openenclave/bin/oesign dump -e enclave/build/enclave.Standard_DC24s_v3 | fgrep -i mrenclave | cut -d '=' -f2)"
